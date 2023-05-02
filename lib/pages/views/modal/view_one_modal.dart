@@ -134,7 +134,11 @@ class _EditListItemDialogState extends State<EditListItemDialog> {
                       }
                     },
               child: state.isLoading == true
-                  ? registrationloader()
+                  ? SizedBox(
+                      height: 24.0,
+                      width: 24.0,
+                      child: registrationloader(),
+                    )
                   : const Text('Create Order'),
             );
           },

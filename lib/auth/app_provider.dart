@@ -51,6 +51,7 @@ class AppProvider extends ChangeNotifier {
     checkUserSignIn();
   }
 
+  // check if there is a user session available
   checkUserSignIn() async {
     try {
       _user = await _getUseraccountInfo();
@@ -59,18 +60,20 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // connected to the `create order` button.
   checkAccount(context) async {
     try {
       _isButtonDisabled = true;
       _isLoading = true;
       notifyListeners();
+      // pauses a command for five seconds
       Timer(const Duration(seconds: 5), () {
         _isButtonDisabled = false;
         notifyListeners();
       });
       _user = await _getUseraccountInfo();
     } on AppwriteException catch (e) {
-      print(e.message);
+      // Error handling 1:  handles error if there is no connection
       if (e.message == "XMLHttpRequest error.") {
         _isLoading = false;
         notifyListeners();
@@ -81,6 +84,7 @@ class AppProvider extends ChangeNotifier {
           timeInSecForIosWeb: 5,
         );
       }
+      // Error handling 2:  handles error if there is no account session runnng at the moment
       if (e.message == "User (role: guests) missing scope (account)") {
         _isLoading = false;
         notifyListeners();
@@ -97,8 +101,10 @@ class AppProvider extends ChangeNotifier {
   Future<User?> _getUseraccountInfo() async {
     final response = await account.get();
     if (response.status == true) {
+      // maps response JSON to the model class in `user_model.dart file`
       final jsondata = jsonEncode(response.toMap());
       final json = jsonDecode(jsondata);
+      // runs this functions
       await listVendorDocument();
       await listOrderDocument();
       await _subscribe();
@@ -110,6 +116,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // user login method
   login(String userEmail, String userPassword, context) async {
     try {
       _isLoading = true;
@@ -145,10 +152,10 @@ class AppProvider extends ChangeNotifier {
         );
         notifyListeners();
       }
-      print(e.message);
     }
   }
 
+  // user sign up method
   signup(
       String userEmail, String userPassword, String userName, context) async {
     try {
@@ -192,6 +199,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // list  vendor document and map the document response to the model class in the `vendor_model.dart` file
   listVendorDocument() async {
     try {
       final response = await databases!.listDocuments(
@@ -201,7 +209,6 @@ class AppProvider extends ChangeNotifier {
       _vendorItems = response.documents
           .map((vendors) => Vendor.fromJson(vendors.data))
           .toList();
-      print(vendorItems);
       if (_vendorItems!.isNotEmpty) {
         _isLoading = false;
         notifyListeners();
@@ -211,6 +218,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+    // method list order document and map the document response to the model class in the `order_model.dart` file
   listOrderDocument() async {
     try {
       final response = await databases!.listDocuments(
@@ -219,12 +227,12 @@ class AppProvider extends ChangeNotifier {
       _orderItems = response.documents
           .map((orders) => Order.fromJson(orders.data))
           .toList();
-      print(response.toMap());
     } catch (e) {
       print(e);
     }
   }
 
+  // create a new order document
   createOrderDocument(
       context, String vendorName, List<String> foodItems) async {
     try {
@@ -271,6 +279,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // updating a order document
   updateOrderDocument(String otherdocumentID, String status, documentID) async {
     try {
       _isLoading == true;
@@ -295,6 +304,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // canceling an order document by updating the delivery and order informations
   cancelorder(String orderdocumentID, String deliverystatus,
       String orderstatus, String deliverydocumentID) async{
     try {
@@ -331,6 +341,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // map order status responses to integer color codes
   getOrderStatusColor(String status) {
     switch (status.toLowerCase()) {
       case "payment-accepted":
@@ -348,6 +359,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+    // map delivery status responses to integer color codes
   getDeliveryStatusColor(String status) {
     switch (status.toLowerCase()) {
       case "in-progress":
@@ -361,6 +373,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
+  // realtime subscription
   _subscribe() {
     try {
       final realtime = Realtime(client);
@@ -370,6 +383,8 @@ class AppProvider extends ChangeNotifier {
       realtimeSubscription?.stream.listen((event) {
         if (event.events.contains(
             'databases.${Appconstants.databaseID}.collections.${Appconstants.ordercollectionID}.documents.*.update')) {
+
+          // map throuh the list of orderitems. ay item with the corresponding id should be updated    
           orderItems?.map((element) {
             if (element.id == event.payload['\$id']) {
               element.orderStatus = event.payload['orderStatus'];
